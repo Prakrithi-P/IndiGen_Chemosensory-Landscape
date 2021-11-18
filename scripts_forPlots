@@ -1,0 +1,124 @@
+setwd("D:/taste/finalplots/")
+
+##pca_100k
+library(ggplot2)
+library(randomcoloR)
+d<-read.csv("igv_ind_1kg_100k_OGrem.evec",sep="\t", header=TRUE)
+d1<-read.csv("igv_ind_1kg_100k.evec",sep="\t", header=TRUE)
+n <- 14
+palette <- distinctColorPalette(n,colorb)
+p1<-ggplot(d,aes(PC1,PC2))+geom_point(aes(PC1,PC2,color=Population))+scale_color_manual(values=c("darkviolet", "#80E2A5" ,"cyan" ,"orange" ,"#99cc33", "#cc3300" ,"yellow", "black","blue" ,"pink", "#D6945D", "magenta"))+theme_minimal()+xlab("PC1 (55.43%)")+ylab("PC2 (22.08%)")
+p2<-ggplot(d1,aes(PC1,PC2))+geom_point(aes(PC1,PC2,color=Population),size=1.5)+scale_color_manual(values=c("darkviolet", "#ccff66" ,"cyan" ,"orange" ,"#99cc33", "#cc3300" ,"#FFFF00", "black","blue","#993399","pink", "#D6945D", "magenta","gold3"))+theme_minimal()+xlab("PC1 (37.56%)")+ylab("PC2 (34.92%)")
+library(ggpubr)
+ggarrange(p2,p1,ncol=2,nrow=1)
+
+##variant_summary
+library(maftools)
+n<-annovarToMaf("Ind_all_anno.txt", Center = NULL, refBuild = "hg38", tsbCol = NULL, table = "refGene", basename = NULL, sep = "\t", MAFobj = TRUE)
+plotmafSummary(n,rmOutlier = TRUE , addStat= 'median', dashboard = TRUE, titvRaw=FALSE)
+
+##venny
+library(VennDiagram)
+grid.newpage()                                        # Move to new plotting page
+draw.triple.venn(area1 = 203560,                          # all SNPs
+                 area2 = 75555,
+                 area3 = 137760,
+                 n12 = 43184,
+                 n23 = 51707,
+                 n13 = 48494,
+                 n123 = 36540,
+                 fill = c("purple", "orange" ,"green"),
+                 lty = "blank",
+                 cex=3,
+                 cat.cex=1.5,
+                 print.mode=c("raw","percent"),fontfamily = "Arial",
+                 category = c("1000 Genomes", "SAS(1000 Genomes)", "IndiGen"))
+
+
+grid.newpage()                                        # Move to new plotting page
+draw.triple.venn(area1 = 21554,                          # common
+                 area2 = 18803,
+                 area3 = 19881,
+                 n12 = 17391,
+                 n23 = 17517,
+                 n13 = 16718,
+                 n123 = 16461,
+                 fill = c("blue", "orange" ,"green"),
+                 lty = "blank",
+                 cex=3,
+                 cat.cex=1.5,
+                 print.mode=c("raw","percent"),fontfamily = "Arial",
+                 category = c("1000 Genomes", "SAS(1000 Genomes)", "IndiGen"))
+
+grid.newpage()                                        # Move to new plotting page
+draw.triple.venn(area1 = 161913,                          # private 
+                 area2 = 47261,
+                 area3 = 108517,
+                 n12 = 12723,
+                 n23 = 24590,
+                 n13 = 19470,
+                 n123 =8411 ,
+                 fill = c("purple", "orange" ,"green"),
+                 lty = "blank",
+                 cex=3,
+                 cat.cex=1.5,fontfamily = "Arial",
+                 print.mode=c("raw","percent"))
+
+grid.newpage()                                        # Move to new plotting page
+draw.triple.venn(area1 = 16540,                          # rare
+                 area2 = 8184,
+                 area3 = 9362,
+                 n12 = 2544,
+                 n23 = 6303,
+                 n13 = 2785,
+                 n123 = 2103,
+                 fill = c("purple", "orange" ,"green"),
+                 lty = "blank",
+                 cex=3,
+                 cat.cex=1.5,
+                 print.mode=c("raw","percent"),fontfamily = "Arial",
+                 category = c("1000 Genomes", "SAS(1000 Genomes)", "IndiGen"))
+
+#GENE_WISE NUMBERS pdf 9-15,9-3
+gw<-read.csv("Gene_wise_numbers", sep="\t", header=TRUE) 
+gw$Gene <- factor(gw$Gene,levels=unique(gw$Gene))
+ggplot(gw,aes(Number.of.SNPs,Gene))+geom_point(aes(colour=Population,alpha=0.5,size=2))+ theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),panel.background = element_blank(), axis.line = element_line(colour = "black"))+theme(axis.title.y = element_text(size = 20),axis.text.x = element_text(angle = 90,size=15),plot.title = element_text(hjust=0.5),strip.text.x = element_text(size=20))+ facet_grid(Frequency.Category ~ .)+facet_wrap(Frequency.Category~.,scales="free")+scale_color_manual(values=c("darkviolet","green","orange"))+theme(text=element_text(size=15))+guides(color= guide_legend(override.aes = list(size=5)))
+
+##GTEX
+data<-read.csv("gtex_f", sep="\t", header=TRUE)
+data$rsID <- factor(data$rsID,levels=unique(data$rsID))
+ggplot(data,aes(rsID,Tissue))+geom_point(aes(colour=NES,size=-log10(P.value)),alpha=1/2,bg="white") +guides(size = guide_legend())+theme(axis.text.x = element_text(angle = 90),plot.title = element_text(hjust=0.5))+ggtitle("MultiTissue Expression of eQTLs in Chemosensory perception associated Genes")+scale_colour_gradientn(colours = c("#000066","#0000FF","#0080FF","#00CCCC","black","#FF9999","#FF3333","#CC0000","#660000"),breaks = c(-2,-1,-0.5,-0.2,0,0.2,0.5,1,2), limits=c(-2,2))
+
+##TAJIMA_LOLLIPOP
+library(ggpubr)
+b <- read.csv("D:/taste/finalplots/taj_bubble", sep="\t",header=TRUE)
+ggdotchart(b,'Gene','TajimaD',color='Pop', add='segments',group='Gene',add.params = list(color="lightgray", size=2), palette= c("#00AFBB","#E7B800","#FC4E07"),ggtheme = theme_pubr(),dot.size=7, sorting="descending")+geom_hline(yintercept=0, linetype=2)+geom_hline(yintercept=1, linetype=2, color="gray")+geom_hline(yintercept=2, linetype=2, color="gray")+geom_hline(yintercept=-1, linetype=2, color="gray")+geom_hline(yintercept=-2, linetype=2, color="gray")
+
+d <- read.csv("bitter_taj", sep="\t",header=TRUE)
+d$Gene <- factor(d$Gene,levels=unique(d$Gene))
+ggdotchart(d,'Gene','TajimaD',color='Pop', add='segments',group='Gene',add.params = list(color="lightgray", size=2), palette= c("#00AFBB","#E7B800","#ffcc66","red","maroon","#00cc66"),ggtheme = theme_pubr(),dot.size=7, sorting="descending")+geom_hline(yintercept=0, linetype=2)+geom_hline(yintercept=1, linetype=2, color="gray")+geom_hline(yintercept=2, linetype=2, color="gray")+geom_hline(yintercept=-1, linetype=2, color="gray")+geom_hline(yintercept=-2, linetype=2, color="gray")+theme(axis.text = element_text(size=15), axis.title = element_text(size=20), legend.text = element_text(size=20),legend.title = element_text(size=20))
+
+##deleterious variants_circos
+library(circlize) # >= 0.4.10
+library(ComplexHeatmap)
+mat1<-read.csv("D:/taste/finalplots/pot_del_old", sep="\t", header=TRUE)
+m <- as.matrix(mat1[, -1])
+rownames(m) <- mat1$Gene
+col_fun1 = colorRamp2(c(0,1,5,10,20,30,35), c("lightyellow","blue", "green","yellow","orange", "red","black"))
+circos.par(gap.after = c(20))
+circos.heatmap(m, track.height = 0.2,col = col_fun1,rownames.side = "outside",rownames.cex =0.6, cluster = FALSE)
+lgd = Legend(title = "Number of Potentially\n deleterious SNPs\n\n", col_fun = col_fun1,direction = "horizontal", legend_width = unit(3,"cm"))
+grid.draw(lgd)
+
+##homology
+d<-read.csv("TAS1R3",sep="\t",header = TRUE)
+gldc<-d %>% group_by(d$Name) %>% summarise(max(Ident))
+write.table(gldc,"gldc",quote=FALSE, row.names = FALSE)
+
+library(gplots)
+d<-read.csv("TASTE_FINAL_FHM", sep="\t", header=TRUE)
+m <- as.matrix(d[, -1])
+rownames(m) <- d$Orga
+col = c("white","red","pink","blue","green")
+breaks <- c(0, 20,45, 65, 95, 100)
+heatmap.2(m, breaks = breaks, col = col,density.info="none", trace="none", dendrogram=c("row"),symm=F,symkey=T,symbreaks=T, scale="none", Colv = F)
