@@ -1,0 +1,49 @@
+Extracting variants in and around the 80 chemosensory perception associated genes
+vcftools --gzvcf IndiGen_all.vcf.gz --bed chemo_genes.bed --recode --out IndiGen_chemo
+
+splitting chromosomes
+for i in {1..22};
+do vcftools  --vcf  IndiGen_chemo.vcf  --chr $i  --recode --recode-INFO-all --out  chr$i;
+done
+
+For each chromosome:
+Sorting  
+cat in.vcf | awk '$1 ~ /^#/ {print $0;next} {print $0 | "sort -u -k1,1 -k2,2n"}' > out_sorted.vcf
+
+Phasing with shapeit
+nohup  /opt/apps/selectionTools-master/bin/shapeit/shapeit.v2.904.2.6.32-696.18.7.el6.x86_64/bin/shapeit --input-map chr1_maphg38 --input-vcf chr1.vcf --force --output-max chr1_taste_phased.vcf
+/opt/apps/selectionTools-master/bin/shapeit/shapeit.v2.904.2.6.32-696.18.7.el6.x86_64/bin/shapeit -convert --input-haps gwas.phased --output-vcf gwas.phased.vcf
+
+Filling ancestral allele information
+java -jar dist/vcfancestralalleles.jar -m chr1nn.mf chr1_final.vcf | bcftools annotate -x '^INFO/' > chr1_filled.vcf
+
+Extracting variants from 1000G
+tabix -R tastegenesn.bed 1KG3.vcf.gz > 1kggenesnps.vcf
+#These were later split according to the major populations
+
+The VCFs were split according to their frequency categories by:
+
+vcftools --gzvcf VCF --maf 0.05 --recode --out common
+vcftools --gzvcf VCF --max-maf 0.05 --maf 0.01--recode --out rare
+vcftools --gzvcf VCF --max-maf 0.01 --recode --out private
+
+Ancestry estimation and PCA
+All common SNPs from 1000G, IGV and IndiGen were extracted and merged (All in hg38 build format)
+
+plink --vcf IndiGen.vcf --make-bed --out IndiGen
+plink --vcf 1000G.vcf --make-bed --out 1000G
+plink --vcf IGV.vcf --make-bed --out IGV
+
+plink --bfile 1000G --bmerge to_merge.txt --make-bed merged
+plink --bfile merged --recode12 --make-bed --out merged12
+
+Clustering
+Admixture
+for i in {2..15}; do /opt/apps/admixture/admixture merged12.bed $i --cv -j32; done (k=1 to 15 to identify optimmum number of clusters)
+
+Fst
+vcftools --vcf merged.vcf --weir-fst-pop <separately specified for Ind1,Ind2,Ind3,EUR,AFR,AMR and different IGV populations> --out all_fst
+
+PCA analysis was done with different sets of SNPs based on their Fst values
+plink --bfile merged --extract topFstSNPs --pca --out pca
+
